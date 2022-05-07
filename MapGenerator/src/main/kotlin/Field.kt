@@ -1,13 +1,15 @@
-import java.io.File
-import kotlin.random.Random
+import CellsAndTypes.Cell
+import CellsAndTypes.Decoration
+import CellsAndTypes.Road
+import Generator.CellTypeGenerator
+import java.lang.Integer.max
 
 class Field(rows:Int, cols:Int) {
-    private val rows:Int
-    private val cols:Int
-    private val koefSmallCreeps = 4
-    private val stepSmallCreeps = 10
-    private val matr:MutableList<MutableList<Cell>> = ArrayList()
+    val rows:Int
+    val cols:Int
+    val matr:MutableList<MutableList<Cell>> = ArrayList()
     private val roadPoints:MutableList<Pair<Int,Int>> = ArrayList()
+    private val castlePoints:MutableList<Pair<Int,Int>> = ArrayList()
     init{
         this.rows = rows
         this.cols = cols
@@ -20,73 +22,102 @@ class Field(rows:Int, cols:Int) {
             }
         }
     }
-    private fun connectTwoPoints(f:Pair<Int, Int>, s:Pair<Int, Int>){
+
+    fun getAllPointsBetween(f:Pair<Int, Int>, s:Pair<Int, Int>,
+                            notRoad:Pair<Int,Int> = Pair(-1,-1)):MutableList<Pair<Int,Int>>{
+        val allPoints:MutableList<Pair<Int,Int>> = ArrayList()
         if(f.first > s.first){
-            return connectTwoPoints(s, f)
+            return getAllPointsBetween(s, f, notRoad)
         }
-        var typeOfRoadNum = Random.nextInt(10)
-        when(typeOfRoadNum){
-            in 0 until 7 -> typeOfRoadNum = 1
-            in 7 until 9 -> typeOfRoadNum = 2
-            in 9 until 10 -> typeOfRoadNum = 3
-        }
-        val typeOfRoad = Cell.TypeOfRoad.fromInt(typeOfRoadNum)
         var jOld = f.second
         if(f.first == s.first){
             if(f.second <= s.second) {
                 for (j in f.second..s.second)
-                    initRoad(matr, f.first, j, typeOfRoad)
+                    allPoints.add(Pair(f.first, j))
             } else{
                 for (j in s.second..f.second)
-                    initRoad(matr, f.first, j, typeOfRoad)
+                    allPoints.add(Pair(f.first, j))
             }
-            return
+            //allPoints.removeAll{it.first == notRoad.first && it.second == notRoad.second}
+            if(allPoints.contains(notRoad))
+                allPoints.remove(notRoad)
+            return allPoints
         }
-        var stepper = 0
+
         for(i in f.first..s.first){
-            // if(i > f.first) break
             var jNew = f.second + ((s.second - f.second) * (i - f.first) / (s.first - f.first)).toInt()
-            // if(jNew < jOld) jNew++
-            // else jNew--
             if(jOld < jNew) {
                 for (j in jNew downTo jOld) {
-                    initRoad(matr, i, j, typeOfRoad)
-                    stepper++
-                    if(stepper >= stepSmallCreeps){
-                        stepper = 0
-                        genSmallCreeps(i,j)
-                    }
-                }
-            }else if(jOld == jNew) {
-                initRoad(matr, i, jOld, typeOfRoad)
-                stepper++
-                if(stepper >= stepSmallCreeps){
-                    stepper = 0
-                    genSmallCreeps(i,jOld)
+                    allPoints.add(Pair(i, j))
                 }
             } else{
                 for (j in jNew..jOld) {
-                    initRoad(matr, i, j, typeOfRoad)
-                    stepper++
-                    if(stepper >= stepSmallCreeps){
-                        stepper = 0
-                        genSmallCreeps(i,j)
-                    }
+                    allPoints.add(Pair(i, j))
                 }
             }
             jOld = jNew
         }
+        //allPoints.removeAll{it.first == notRoad.first && it.second == notRoad.second}
+        if(allPoints.contains(notRoad))
+            allPoints.remove(notRoad)
+        return allPoints
     }
 
-    private fun initRoad(matr:MutableList<MutableList<Cell>>, i:Int, j:Int, typeOfRoad:Cell.TypeOfRoad){
-        matr[i][j].type = Cell.TypeOfCell.ROAD
-        matr[i][j].road = typeOfRoad
-    }
-
-    fun genSmallCreeps(i:Int, j:Int){
-        if(Random.nextInt(10) < koefSmallCreeps){
-            matr[i][j].creeps = Cell.TypeOfCreeps.SMALL
+    fun connectTwoPoints(f:Pair<Int, Int>, s:Pair<Int, Int>, typeOfRoad: Road.TypeOfRoad,
+                         notRoad:Pair<Int,Int> = Pair(-1,-1)){
+        getAllPointsBetween(f,s, notRoad).forEach {
+            initRoad(it.first,it.second, typeOfRoad)
         }
+    }
+
+    fun findClosestRoad(p:Pair<Int,Int>, isDownLeft:Boolean = false):Pair<Int,Int>{
+        val maxDist = distanceSQ(Pair(0,0), Pair(rows - 1, cols - 1))
+        var ans = Pair(-1,-1)
+        var dist = maxDist
+        if(isDownLeft){
+            for(i in p.first until rows){
+                for(j in p.second until cols){
+                    if(matr[i][j].type == Cell.TypeOfCell.ROAD) {
+                        val tempDist = distanceSQ(p, Pair(i,j))
+                        if(tempDist < dist){
+                            dist = tempDist
+                            ans = Pair(i,j)
+                        }
+                    }
+                }
+            }
+            if(dist != maxDist)
+                return ans
+        }
+        for(i in 0 until rows){
+            for(j in 0 until cols){
+                if(matr[i][j].type == Cell.TypeOfCell.ROAD) {
+                    val tempDist = distanceSQ(p, Pair(i,j))
+                    if(tempDist < dist){
+                        dist = tempDist
+                        ans = Pair(i,j)
+                    }
+                }
+            }
+        }
+        return ans
+    }
+
+    private fun initRoad(i:Int, j:Int, typeOfRoad: Road.TypeOfRoad){
+        matr[i][j].type = Cell.TypeOfCell.ROAD
+        matr[i][j].obj = Road(typeOfRoad)
+        matr[i][j].isTaken = true
+    }
+
+    fun getMatrOfIsTaken():MutableList<MutableList<Boolean>>{
+        val matrIsTaken:MutableList<MutableList<Boolean>> = ArrayList()
+        for(i in 0 until rows){
+            matrIsTaken.add(ArrayList())
+            for(cell in matr[i]){
+                matrIsTaken[i].add(cell.isTaken)
+            }
+        }
+        return matrIsTaken
     }
 
     fun clear(){
@@ -104,35 +135,30 @@ class Field(rows:Int, cols:Int) {
         for(i in 0 until matrix.size){
             this.roadPoints.add(roadPoints[i])
             for(j in matrix[i]){
-                connectTwoPoints(roadPoints[i], roadPoints[j])
+                connectTwoPoints(roadPoints[i], roadPoints[j], CellTypeGenerator.genTypeOfRoad())
             }
         }
-        val koef = Random.nextDouble(1.0/rows, 0.15)
-        genTerrainType(roadPoints, koef)
     }
 
-    fun genTerrainType(points:MutableList<Pair<Int,Int>>, koef:Double){
-        for(p in points){
-            if(Random.nextDouble(1.0) < koef){
-                matr[p.first][p.second].terr = Cell.TypeOfTerrain.fromInt(Random.nextInt(1,11))
-            }
-        }
+    fun setTerrainType(i:Int, j:Int, type:Cell.TypeOfTerrain){
+        matr[i][j].terr = type
     }
 
     fun putAllTerrainType(){
         for(i in 0 until rows){
             for(j in 0 until cols){
-                if(matr[i][j].terr == Cell.TypeOfTerrain.NO)
+                if(matr[i][j].terr == Cell.TypeOfTerrain.NO) {
                     matr[i][j].terr = getClosestTerrainCell(i, j).terr
+                }
             }
         }
     }
 
-    fun getClosestTerrainCell(i:Int,j:Int):Cell{
+    fun getClosestTerrainCell(i:Int,j:Int): Cell {
         val thisPair = Pair(i, j)
         var minDist = rows * rows + cols*cols
         var pair = Pair(i, j)
-        for(p in roadPoints){
+        for(p in castlePoints){
             if(matr[p.first][p.second].terr != Cell.TypeOfTerrain.NO){
                 if(minDist > distanceSQ(thisPair,p)){
                     minDist = distanceSQ(thisPair, p)
@@ -150,14 +176,113 @@ class Field(rows:Int, cols:Int) {
 
     fun placeCastles(castlePoints:MutableList<Pair<Int,Int>>){
         for(p in castlePoints){
+            val closestRoad = findClosestRoad(Pair(p.first,p.second), true)
+            this.castlePoints.add(p)
             matr[p.first][p.second].type = Cell.TypeOfCell.CASTLE
+            // for(i in p.first - 4..p.first + 4){
+            //     for(j in p.second - 4..p.second +4){
+            //         matr[i][j].isTaken = true
+            //     }
+            // }
+            matr[p.first][p.second].obj = CellTypeGenerator.genCastle()
+
+            connectTwoPoints(p, closestRoad, CellTypeGenerator.genTypeOfRoad(), p)
         }
-        genTerrainType(castlePoints, 10.0)
     }
 
-    fun placeStrongCreeps(strongCreepsPoints:MutableList<Pair<Int,Int>>){
-        for(p in strongCreepsPoints){
-            matr[p.first][p.second].creeps = Cell.TypeOfCreeps.BIG
+    fun getClosestPointToTheRoad(start:Pair<Int,Int>, closestRoad:Pair<Int,Int>, radius:Int):Pair<Int,Int>{
+        var minDist = rows*rows + cols*cols
+        var ans = Pair(-1,-1)
+        val between = getAllPointsBetween(start, closestRoad)
+        for(b in between){
+            val tempDist = distanceSQ(b,closestRoad)
+            if(isZoneOfPointsNotTaken(radius, b) && tempDist < minDist){
+                minDist = tempDist
+                ans = b
+            }
+        }
+        return ans
+    }
+
+    fun isZoneOfPointsNotTaken(radius:Int, p:Pair<Int,Int>):Boolean{
+        val x = p.first
+        val y = p.second
+        for (i in x - radius..x + radius) {
+            for (j in y - radius..y + radius) {
+                if (i < 0 || i >= rows || j < 0 || j >= cols  || matr[i][j].isTaken)
+                    return false
+            }
+        }
+        return true
+    }
+
+    fun isPointCorrectForBuilding(p:Pair<Int,Int>, radius:Int):Boolean{
+        if(!isZoneOfPointsNotTaken(radius, p)) return false
+        val closestRoad = findClosestRoad(p, true)
+        val between = getAllPointsBetween(p, closestRoad, closestRoad)
+        between.forEach { if(matr[it.first][it.second].isTaken) return false }
+        return true
+    }
+
+    fun placeDecorations(points:MutableList<Pair<Int,Int>>, type:Decoration.TypeOfDecoration){
+        points.forEach {
+            matr[it.first][it.second].type = Cell.TypeOfCell.DECORATION
+            matr[it.first][it.second].obj = Decoration(type)
+        }
+    }
+
+    fun placeOwnerables(ownerablePoints:MutableList<Pair<Int,Int>>){
+        // ownerablePoints.forEach {
+        //     val x = it.first
+        //     val y = it.second
+        //     for (i in x - 2..x + 2) {
+        //         for (j in y - 2..y + 2) {
+        //             matr[i][j].isTaken = true
+        //         }
+        //     }
+        // }
+        for(o in ownerablePoints){
+            for (i in o.first - 2..o.first + 2) {
+                for (j in o.second - 2..o.second + 2) {
+                    matr[i][j].isTaken = false
+                }
+            }
+            val closestRoad = findClosestRoad(o, true)
+            val cl = getClosestPointToTheRoad(o, closestRoad, 2)
+
+            matr[cl.first][cl.second].type = Cell.TypeOfCell.OWNERABLE
+            for(i in cl.first - 2..cl.first + 2){
+                for(j in cl.second - 2..cl.second +2){
+                    matr[i][j].isTaken = true
+                }
+            }
+            matr[cl.first][cl.second].obj = CellTypeGenerator.genOwnerable()
+            connectTwoPoints(cl, closestRoad, CellTypeGenerator.genTypeOfRoad(), cl)
+        }
+    }
+
+    fun placeCreep(creep:Pair<Int,Int>, type: Cell.TypeOfCreeps){
+        matr[creep.first][creep.second].creeps = type
+    }
+
+    fun placeMapItems(items:MutableList<Pair<Int,Int>>){
+        for(item in items){
+            for (i in item.first - 1..item.first + 1) {
+                for (j in item.second - 1..item.second + 1) {
+                    matr[i][j].isTaken = false
+                }
+            }
+            val closestRoad = findClosestRoad(item, true)
+            val cl = getClosestPointToTheRoad(item, closestRoad, 1)
+
+            matr[cl.first][cl.second].type = Cell.TypeOfCell.MAP_ITEM
+            for(i in cl.first - 1..cl.first + 1){
+                for(j in cl.second - 1..cl.second +1){
+                    matr[i][j].isTaken = true
+                }
+            }
+            matr[cl.first][cl.second].obj = CellTypeGenerator.genMapItem()
+            connectTwoPoints(cl, closestRoad, CellTypeGenerator.genTypeOfRoad(), cl)
         }
     }
 
@@ -165,21 +290,22 @@ class Field(rows:Int, cols:Int) {
         for(i in 0 until rows){
             for(j in 0 until cols){
                 when(matr[i][j].type) {
-                    Cell.TypeOfCell.LAND -> showLandCell(matr[i][j])
+                    Cell.TypeOfCell.LAND, Cell.TypeOfCell.DECORATION -> showLandCell(matr[i][j])
                     Cell.TypeOfCell.ROAD -> showRoadCell(matr[i][j])
                     Cell.TypeOfCell.CASTLE -> print("\u001B[45;1m")
+                    Cell.TypeOfCell.OWNERABLE -> print("\u001B[45;1m")
                 }
                 when(matr[i][j].creeps){
                     Cell.TypeOfCreeps.NO -> print("   ")
-                    Cell.TypeOfCreeps.BIG -> print("#  ")
-                    Cell.TypeOfCreeps.SMALL -> print("0  ")
+                    Cell.TypeOfCreeps.INSANE, Cell.TypeOfCreeps.VERY_STRONG, Cell.TypeOfCreeps.STRONG -> print("#  ")
+                    Cell.TypeOfCreeps.WEEK, Cell.TypeOfCreeps.VERY_WEEK, Cell.TypeOfCreeps.NORMAL -> print("0  ")
                 }
             }
             println()
         }
     }
 
-    fun showLandCell(cell:Cell){
+    fun showLandCell(cell: Cell){
         when(cell.terr){
             Cell.TypeOfTerrain.GRASS, Cell.TypeOfTerrain.DARK_GRASS,
             Cell.TypeOfTerrain.VOLCANO, Cell.TypeOfTerrain.STONE -> print("\u001B[42;1m")
@@ -190,137 +316,90 @@ class Field(rows:Int, cols:Int) {
         }
     }
 
-    fun showRoadCell(cell:Cell){
-        when(cell.road){
-            Cell.TypeOfRoad.OK -> print("\u001B[40;1m")
-            Cell.TypeOfRoad.HARD -> print("\u001B[44;1m")
-            Cell.TypeOfRoad.VERY_HARD -> print("\u001B[41;1m")
-        }
+    fun showRoadCell(cell: Cell){
+        //when(cell.obj.getInt()){
+        //    0 -> print("\u001B[40;1m")
+        //    1 -> print("\u001B[44;1m")
+        //    2 -> print("\u001B[41;1m")
+        //}
+        print("\u001B[40;1m")
     }
 
-    fun writeToBytes(){
-        val bytesBuff:MutableList<Byte> = ArrayList()
-        val EMAP_FILE_HDR_KEY:UInt = 0x76235278u
-        val EMAP_FILE_VERSION = 0x19u
-        // EMAP_FILE_HDR_KEY
-        uIntToByteArray(EMAP_FILE_HDR_KEY).forEach { bytesBuff.add(it) }
-        //listOf<Byte>(78, 52, 23, 76).forEach{bytesBuff.add(it)}
-        // EMAP_FILE_VERSION
-        uIntToByteArray(EMAP_FILE_VERSION).forEach { bytesBuff.add(it) }
-        //listOf<Byte>(0, 0, 0, 0).forEach{bytesBuff.add(it)}
-        // map.m_Siz
-        bytesBuff.add(getMapSiz())
-        // map.m_lngMask
-        listOf<Byte>(1, 0, 0, 0).forEach{bytesBuff.add(it)}
-        // text resources count
-        listOf<Byte>(2, 0, 0, 0).forEach{bytesBuff.add(it)}
-        // map.m_MapVersion and map_MapAuthor
-        listOf<Byte>(15, 0, 0, 0, 77, 0, 97, 0, 112, 0, 32, 0, 68, 0, 101, 0,
-            115, 0, 99, 0, 114, 0, 105, 0, 112, 0, 116, 0, 105, 0, 111, 0,
-            110, 0, 2, 0, 19, 0, 0, 0, 68, 0, 101, 0, 102, 0, 97, 0,
-            117, 0, 108, 0, 116, 0, 32, 0, 100, 0, 101, 0, 115, 0, 99, 0,
-            116, 0, 105, 0, 112, 0, 116, 0, 105, 0, 111, 0, 110, 0, 8, 0,
-            0, 0, 77, 0, 97, 0, 112, 0, 32, 0, 110, 0, 97, 0, 109, 0,
-            101, 0, 1, 0, 7, 0, 0, 0, 78, 0, 101, 0, 119, 0, 32, 0,
-            77, 0, 97, 0, 112, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    -1, -1, -1, -1, 0, 0, 0, 0, 2, 0, 0, 2, 0, 1, 2, 0
-        ).forEach{bytesBuff.add(it)}
-        val heroes_size = 0u
-        uInt16ToByteArray(heroes_size).forEach { bytesBuff.add(it) }
-        val mapItems_size = 0u
-        uInt16ToByteArray(mapItems_size).forEach { bytesBuff.add(it) }
-        val guards_size = 0u
-        uInt16ToByteArray(guards_size).forEach { bytesBuff.add(it) }
-        val mapEvents_size = 0u
-        uInt16ToByteArray(mapEvents_size).forEach { bytesBuff.add(it) }
-        val visitables_size = 0u
-        uInt16ToByteArray(visitables_size).forEach { bytesBuff.add(it) }
-        val ownerables_size = 0u
-        uInt16ToByteArray(ownerables_size).forEach { bytesBuff.add(it) }
-
-        // Castles
-        val castles_size = 0u // size
-        uInt16ToByteArray(castles_size).forEach { bytesBuff.add(it) }
-        bytesBuff.add(32)
-        bytesBuff.add(-1) // owner
-        uInt16ToByteArray(1u).forEach { bytesBuff.add(it) } // pos
-        uInt16ToByteArray(1u).forEach { bytesBuff.add(it) }
-        for(i in 1..7){ // garrison
-            listOf<Byte>(-1, -1, 0, 0, 0, 0).forEach{bytesBuff.add(it)}
-        }
-        // Map Dump
-        getMapDumpByteArray().forEach { bytesBuff.add(it) }
-
-        // Decorations
-        listOf<Byte>(0, 0, 0, 0).forEach{bytesBuff.add(it)}
-
-        // Roads
-        val allRoadPoints = getAllRoadPoints()
-        uIntToByteArray(allRoadPoints.size.toUInt()).forEach { bytesBuff.add(it) }
-
-        val roadOK_id = listOf<Byte>(10, 0, 0, 0, 115, 0, 116, 0, 111, 0, 110, 0, 101, 0, 95, 0,
-            114, 0, 111, 0, 97, 0, 100, 0)
-        val roadHard_id = listOf<Byte>(9, 0, 0, 0, 100, 0, 105, 0, 114, 0, 116, 0, 95, 0, 114, 0,
-            111, 0, 97, 0, 100, 0)
-        allRoadPoints.forEach {
-            uInt16ToByteArray(it.xy.first.toUInt()).forEach { bytesBuff.add(it) }
-            uInt16ToByteArray(it.xy.second.toUInt()).forEach { bytesBuff.add(it) }
-            when(it.road){
-                Cell.TypeOfRoad.OK -> roadOK_id.forEach{bytesBuff.add(it)}
-                Cell.TypeOfRoad.HARD, Cell.TypeOfRoad.VERY_HARD -> roadOK_id.forEach{bytesBuff.add(it)}
+    fun isNotConnectedWithRoad(p:Pair<Int,Int>):Boolean{
+        for(i in maxOf(p.first - 1, 0)..minOf(p.first + 1, rows - 1)){
+            for(j in maxOf(p.second - 1, 0)..minOf(p.second + 1, cols - 1)){
+                if(matr[i][j].type == Cell.TypeOfCell.ROAD)
+                    return false
             }
         }
+        return true
+    }
 
-        //showBytesBuff(bytesBuff)
-        var arr:ByteArray = ByteArray(bytesBuff.size)
-        for(i in 0 until bytesBuff.size){
-            arr[i] = bytesBuff[i]
+    fun getCastleCells():MutableList<Cell>{
+        val castleCells:MutableList<Cell> = ArrayList()
+        for(i in 0 until rows){
+            for(j in 0 until cols){
+                if(matr[i][j].type == Cell.TypeOfCell.CASTLE){
+                    castleCells.add(matr[i][j])
+                }
+            }
         }
-        File("C:\\Users\\Папа\\Desktop\\pph-native-initial (1)\\MyMaps\\file.hmm").writeBytes(arr)
+        return castleCells
     }
 
-    fun showBytesBuff(bytesBuff:MutableList<Byte>){
-        for(i in 0 until bytesBuff.size){
-            print("${Integer.toHexString(bytesBuff[i].toInt())} ")
-            if((i + 1) % 4 == 0)
-                print("    ")
-            if((i + 1) % 16 == 0)
-                println()
+    fun getMapItemCells():MutableList<Cell>{
+        val mapItemCells:MutableList<Cell> = ArrayList()
+        for(i in 0 until rows){
+            for(j in 0 until cols){
+                if(matr[i][j].type == Cell.TypeOfCell.MAP_ITEM){
+                    mapItemCells.add(matr[i][j])
+                }
+            }
         }
+        return mapItemCells
     }
 
-    fun getMapSiz():Byte{
-        if(rows != cols) return -1
-        when(rows - 1){
-            32 -> return 0
-            64 -> return 1
-            128 -> return 2
-            256 -> return 3
+    fun getOwnerableCells():MutableList<Cell>{
+        val ownerableCells:MutableList<Cell> = ArrayList()
+        for(i in 0 until rows){
+            for(j in 0 until cols){
+                if(matr[i][j].type == Cell.TypeOfCell.OWNERABLE){
+                    ownerableCells.add(matr[i][j])
+                }
+            }
         }
-        return -1
+        return ownerableCells
     }
 
-    fun uIntToByteArray(value:UInt):ByteArray{
-        val bytes = ByteArray(4)
-        bytes[0] = (value and 0xFFFFu).toByte()
-        bytes[1] = (value.shr(8) and 0xFFFFu).toByte()
-        bytes[2] = (value.shr(16) and 0xFFFFu).toByte()
-        bytes[3] = (value.shr(24) and 0xFFFFu).toByte()
-        return bytes
+    fun getDecorationCells():MutableList<Cell>{
+        val decorationCells:MutableList<Cell> = ArrayList()
+        for(i in 0 until rows){
+            for(j in 0 until cols){
+                if(matr[i][j].type == Cell.TypeOfCell.DECORATION){
+                    decorationCells.add(matr[i][j])
+                }
+            }
+        }
+        return decorationCells
     }
-
-    fun uInt16ToByteArray(value:UInt):ByteArray{
-        val bytes = ByteArray(2)
-        bytes[0] = (value and 0xFFFFu).toByte()
-        bytes[1] = (value.shr(8) and 0xFFFFu).toByte()
-        return bytes
+    fun getGuardCells():MutableList<Cell>{
+        val guardCells:MutableList<Cell> = ArrayList()
+        for(i in 0 until rows){
+            for(j in 0 until cols){
+                if(matr[i][j].creeps != Cell.TypeOfCreeps.NO){
+                    guardCells.add(matr[i][j])
+                }
+            }
+        }
+        return guardCells
     }
 
     fun getAllRoadPoints():MutableList<Cell>{
         val allRoadPoints:MutableList<Cell> = ArrayList()
         for(i in 0 until rows){
             for(j in 0 until cols){
-                if(matr[i][j].type == Cell.TypeOfCell.ROAD || matr[i][j].type == Cell.TypeOfCell.CASTLE){
+                if(matr[i][j].type == Cell.TypeOfCell.ROAD ||
+                    matr[i][j].type == Cell.TypeOfCell.CASTLE || matr[i][j].type == Cell.TypeOfCell.OWNERABLE){
                     allRoadPoints.add(matr[i][j])
                 }
             }
@@ -328,13 +407,13 @@ class Field(rows:Int, cols:Int) {
         return allRoadPoints
     }
 
-    fun getMapDumpByteArray():MutableList<Byte>{
-        val byteArr:MutableList<Byte> = ArrayList()
-        for(i in 0 until rows){
-            for(j in 0 until cols){
-                uInt16ToByteArray(matr[i][j].terr.value.toUInt()).forEach { byteArr.add(it) }
-            }
-        }
-        return byteArr
+    private val playersCastles:MutableList<Pair<Int,Int>> = ArrayList()
+    fun setPlayersCastles(castles:MutableList<Pair<Int,Int>>){
+        playersCastles.clear()
+        castles.forEach { playersCastles.add(it) }
     }
+    fun getPlayersCastles():MutableList<Pair<Int,Int>>{
+        return playersCastles
+    }
+
 }
