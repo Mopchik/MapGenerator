@@ -25,7 +25,7 @@ fun main() {
         return
     }
     val field = FieldGenerator(mapSize,nOfPlayers).generateField()
-    field.show()
+    //field.show()
     BytesBuffer(field).writeToBytes(nOfPlayers)
 }
 
