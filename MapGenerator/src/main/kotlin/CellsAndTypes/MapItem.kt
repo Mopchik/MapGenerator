@@ -1,4 +1,4 @@
-package CellsAndTypes
+package cellsAndTypes
 
 class MapItem(var type:TypeOfItem):Object() {
     constructor():this(TypeOfItem.RANDOM_RES)

@@ -1,4 +1,4 @@
-package CellsAndTypes
+package cellsAndTypes
 
 public class Cell(t: TypeOfCell, terr: TypeOfTerrain, creeps: TypeOfCreeps, xy:Pair<Int,Int>) {
     constructor(xy:Pair<Int,Int>) : this(TypeOfCell.LAND, TypeOfTerrain.NO, TypeOfCreeps.NO, xy)

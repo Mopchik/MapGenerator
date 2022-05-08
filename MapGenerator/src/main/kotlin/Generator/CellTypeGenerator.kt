@@ -1,13 +1,13 @@
-package Generator
+package generator
 
-import CellsAndTypes.*
+import cellsAndTypes.*
 import kotlin.random.Random
 
 class CellTypeGenerator {
     companion object{
         private val koefSmallCreeps = 0.4
         private val koefOfTerrainType = Random.nextDouble(0.90, 0.99)
-        fun genSmallCreeps(i:Int, j:Int):Cell.TypeOfCreeps{
+        fun genSmallCreeps():Cell.TypeOfCreeps{
             if(Random.nextDouble(1.0) < koefSmallCreeps){
                 return Cell.TypeOfCreeps.fromInt(Random.nextInt(1, 3))
             }

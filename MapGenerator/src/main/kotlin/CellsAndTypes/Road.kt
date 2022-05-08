@@ -1,4 +1,4 @@
-package CellsAndTypes
+package cellsAndTypes
 
 class Road(var type: TypeOfRoad): Object() {
     constructor():this(TypeOfRoad.OK)

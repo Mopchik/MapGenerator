@@ -1,4 +1,4 @@
-package Generator
+package generator
 
 import kotlin.random.Random
 
@@ -30,8 +30,8 @@ class GraphGenerator(val mapSize:Int) {
             matr[t].add(v)
             notConnected.remove(t)
         }
-        var i = 0
-        var koef = 2.0
+        var koef:Double
+        //var i = 0
         // while(i < notConnected.size){
         //     if(matr[v].size > 2) koef /= (matr[v].size)
         //     if(Random.nextDouble(matr.size.toDouble()) < koef) {

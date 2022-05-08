@@ -1,4 +1,4 @@
-package CellsAndTypes
+package cellsAndTypes
 
 class Decoration(var type:TypeOfDecoration):Object() {
     constructor():this(TypeOfDecoration.SMALL)

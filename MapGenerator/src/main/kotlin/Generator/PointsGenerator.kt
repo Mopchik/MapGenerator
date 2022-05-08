@@ -1,8 +1,6 @@
-package Generator
+package generator
 
-import CellsAndTypes.Cell
-import CellsAndTypes.Decoration
-import CellsAndTypes.MapItem
+import cellsAndTypes.MapItem
 import Field
 import kotlin.random.Random
 

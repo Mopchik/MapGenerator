@@ -1,8 +1,7 @@
-import CellsAndTypes.Cell
-import CellsAndTypes.Decoration
-import CellsAndTypes.Road
-import Generator.CellTypeGenerator
-import java.lang.Integer.max
+import cellsAndTypes.Cell
+import cellsAndTypes.Decoration
+import cellsAndTypes.Road
+import generator.CellTypeGenerator
 
 class Field(rows:Int, cols:Int) {
     val rows:Int
@@ -286,45 +285,6 @@ class Field(rows:Int, cols:Int) {
         }
     }
 
-    fun show(){
-        for(i in 0 until rows){
-            for(j in 0 until cols){
-                when(matr[i][j].type) {
-                    Cell.TypeOfCell.LAND, Cell.TypeOfCell.DECORATION -> showLandCell(matr[i][j])
-                    Cell.TypeOfCell.ROAD -> showRoadCell(matr[i][j])
-                    Cell.TypeOfCell.CASTLE -> print("\u001B[45;1m")
-                    Cell.TypeOfCell.OWNERABLE -> print("\u001B[45;1m")
-                }
-                when(matr[i][j].creeps){
-                    Cell.TypeOfCreeps.NO -> print("   ")
-                    Cell.TypeOfCreeps.INSANE, Cell.TypeOfCreeps.VERY_STRONG, Cell.TypeOfCreeps.STRONG -> print("#  ")
-                    Cell.TypeOfCreeps.WEEK, Cell.TypeOfCreeps.VERY_WEEK, Cell.TypeOfCreeps.NORMAL -> print("0  ")
-                }
-            }
-            println()
-        }
-    }
-
-    fun showLandCell(cell: Cell){
-        when(cell.terr){
-            Cell.TypeOfTerrain.GRASS, Cell.TypeOfTerrain.DARK_GRASS,
-            Cell.TypeOfTerrain.VOLCANO, Cell.TypeOfTerrain.STONE -> print("\u001B[42;1m")
-            Cell.TypeOfTerrain.SAND, Cell.TypeOfTerrain.LIGHT_SAND, Cell.TypeOfTerrain.DIRT,
-            Cell.TypeOfTerrain.SOIL, Cell.TypeOfTerrain.GOLD -> print("\u001B[43;1m")
-            Cell.TypeOfTerrain.SNOW -> print("\u001B[47;1m")
-            else -> print("\u001B[44;1m")
-        }
-    }
-
-    fun showRoadCell(cell: Cell){
-        //when(cell.obj.getInt()){
-        //    0 -> print("\u001B[40;1m")
-        //    1 -> print("\u001B[44;1m")
-        //    2 -> print("\u001B[41;1m")
-        //}
-        print("\u001B[40;1m")
-    }
-
     fun isNotConnectedWithRoad(p:Pair<Int,Int>):Boolean{
         for(i in maxOf(p.first - 1, 0)..minOf(p.first + 1, rows - 1)){
             for(j in maxOf(p.second - 1, 0)..minOf(p.second + 1, cols - 1)){
@@ -415,5 +375,42 @@ class Field(rows:Int, cols:Int) {
     fun getPlayersCastles():MutableList<Pair<Int,Int>>{
         return playersCastles
     }
+
+    // fun show(){
+    //     for(i in 0 until rows){
+    //         for(j in 0 until cols){
+    //             when(matr[i][j].type) {
+    //                 Cell.TypeOfCell.LAND, Cell.TypeOfCell.DECORATION -> showLandCell(matr[i][j])
+    //                 Cell.TypeOfCell.ROAD -> showRoadCell(matr[i][j])
+    //                 Cell.TypeOfCell.CASTLE -> print("\u001B[45;1m")
+    //                 Cell.TypeOfCell.OWNERABLE -> print("\u001B[45;1m")
+    //             }
+    //             when(matr[i][j].creeps){
+    //                 Cell.TypeOfCreeps.NO -> print("   ")
+    //                 Cell.TypeOfCreeps.INSANE, Cell.TypeOfCreeps.VERY_STRONG, Cell.TypeOfCreeps.STRONG -> print("#  ")
+    //                 Cell.TypeOfCreeps.WEEK, Cell.TypeOfCreeps.VERY_WEEK, Cell.TypeOfCreeps.NORMAL -> print("0  ")
+    //             }
+    //         }
+    //         println()
+    //     }
+    // }
+    // fun showLandCell(cell: Cell){
+    //     when(cell.terr){
+    //         Cell.TypeOfTerrain.GRASS, Cell.TypeOfTerrain.DARK_GRASS,
+    //         Cell.TypeOfTerrain.VOLCANO, Cell.TypeOfTerrain.STONE -> print("\u001B[42;1m")
+    //         Cell.TypeOfTerrain.SAND, Cell.TypeOfTerrain.LIGHT_SAND, Cell.TypeOfTerrain.DIRT,
+    //         Cell.TypeOfTerrain.SOIL, Cell.TypeOfTerrain.GOLD -> print("\u001B[43;1m")
+    //         Cell.TypeOfTerrain.SNOW -> print("\u001B[47;1m")
+    //         else -> print("\u001B[44;1m")
+    //     }
+    // }
+    // fun showRoadCell(cell: Cell){
+    //     //when(cell.obj.getInt()){
+    //     //    0 -> print("\u001B[40;1m")
+    //     //    1 -> print("\u001B[44;1m")
+    //     //    2 -> print("\u001B[41;1m")
+    //     //}
+    //     print("\u001B[40;1m")
+    // }
 
 }

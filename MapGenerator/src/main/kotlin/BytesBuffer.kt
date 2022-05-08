@@ -1,8 +1,8 @@
-import CellsAndTypes.*
+import cellsAndTypes.*
 import java.io.File
 
 class BytesBuffer(val field:Field) {
-    fun writeToBytes(nOfPlayers:Int){
+    fun writeToBytes(){
         val bytesBuff:MutableList<Byte> = ArrayList()
 
         // EMAP_FILE_HDR_KEY
@@ -113,7 +113,7 @@ class BytesBuffer(val field:Field) {
         for(i in 0 until bytesBuff.size){
             arr[i] = bytesBuff[i]
         }
-        File("file.hmm").writeBytes(arr)
+        File("map.hmm").writeBytes(arr)
     }
 
 

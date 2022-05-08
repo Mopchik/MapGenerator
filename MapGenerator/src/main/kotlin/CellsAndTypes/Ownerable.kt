@@ -1,4 +1,4 @@
-package CellsAndTypes
+package cellsAndTypes
 
 class Ownerable(var type: TypeOfOwnerable): Object() {
     constructor():this(TypeOfOwnerable.GOLD_MINE)

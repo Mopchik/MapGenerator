@@ -1,4 +1,4 @@
-package CellsAndTypes
+package cellsAndTypes
 
 class Castle(var type: CastleType, var size: CastleSize): Object(){
     constructor():this(CastleType.CITADEL, CastleSize.SMALL)
